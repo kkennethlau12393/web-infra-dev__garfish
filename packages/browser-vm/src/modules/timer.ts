@@ -8,19 +8,11 @@ export const timeoutModule = (sandbox: Sandbox) => {
   const timeout = new Set<number>();
 
   const setTimeout = (handler: TimerHandler, ms?: number, ...args: any[]) => {
-    if (sandbox.options.disableCollect) {
-      return rawSetTimeout(handler, ms, ...args);
+    const timeoutId = rawSetTimeout(handler, ms, ...args);
+   
+    if (!sandbox.options.disableCollect) {
+      timeout.add(timeoutId);
     }
-
-    const callback = (...callbackArgs: any[]) => {
-      timeout.delete(timeoutId);
-      if (typeof handler === 'function') {
-        return handler.apply(window, callbackArgs);
-      }
-      return window.eval(handler);
-    };
-    const timeoutId = rawSetTimeout(callback, ms, ...args);
-    timeout.add(timeoutId);
     return timeoutId;
   };
 
@@ -33,7 +25,6 @@ export const timeoutModule = (sandbox: Sandbox) => {
     timeout.forEach((timeoutId) => {
       rawClearTimeout(timeoutId);
     });
-    timeout.clear();
   };
 
   return {
@@ -54,7 +45,7 @@ export const intervalModule = (sandbox: Sandbox) => {
     ...args: any[]
   ) => {
     const intervalId = rawSetInterval(callback, ms, ...args);
-
+   
     if (!sandbox.options.disableCollect) {
       timeout.add(intervalId);
     }
@@ -70,7 +61,6 @@ export const intervalModule = (sandbox: Sandbox) => {
     timeout.forEach((intervalId) => {
       rawClearInterval(intervalId);
     });
-    timeout.clear();
   };
 
   return {
